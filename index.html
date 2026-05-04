@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SG Enterprises | Live Inventory</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root { --brand: #004aad; }
+        body { background-color: #f8f9fa; font-family: sans-serif; }
+        .navbar { background: #1a1a1a; border-bottom: 3px solid var(--brand); }
+        .product-card { border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 100%; transition: 0.2s; }
+        .product-card:hover { transform: scale(1.02); }
+        .stock-tag { background: #28a745; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; position: absolute; top: 8px; left: 8px; }
+        .btn-add { background: var(--brand); color: white; border: none; border-radius: 5px; width: 100%; padding: 5px; }
+        #cart-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark p-3">
+    <div class="container d-flex justify-content-between">
+        <span class="navbar-brand fw-bold">SG ENTERPRISES</span>
+        <span class="text-white small"><i class="bi bi-whatsapp"></i> 9695781319</span>
+    </div>
+</nav>
+
+<div class="container my-4">
+    <h4 class="mb-4 fw-bold">Wholesale Stock List</h4>
+    <div class="row g-3" id="product-grid">
+        <div class="text-center p-5">Loading inventory data...</div>
+    </div>
+</div>
+
+<button id="cart-btn" class="btn btn-dark btn-lg rounded-circle shadow" data-bs-toggle="modal" data-bs-target="#cartModal">
+    <i class="bi bi-cart-fill"></i>
+    <span class="badge bg-danger rounded-pill" id="count">0</span>
+</button>
+
+<div class="modal fade" id="cartModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Your Order List</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="cart-items">Your list is empty.</div>
+            <div class="modal-footer"><button class="btn btn-success w-100" onclick="sendOrder()">Send to WhatsApp</button></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+
+    // This function fetches your stock.csv file directly from your GitHub
+    async function loadStock() {
+        try {
+            const response = await fetch('stock.csv');
+            const data = await response.text();
+            const rows = data.split('\n').slice(1); // Skip header row
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+
+            rows.forEach(row => {
+                const cols = row.split(',');
+                if (cols.length < 3) return;
+
+                const name = cols[0].trim();
+                const price = cols[1].trim();
+                const stock = cols[2].trim();
+
+                // Only show items that are actually in stock
+                if (parseFloat(stock) > 0 || stock.includes('PCS') || stock.includes('BOX')) {
+                    grid.innerHTML += `
+                        <div class="col-6 col-md-3">
+                            <div class="card product-card p-2">
+                                <span class="stock-tag">${stock}</span>
+                                <div class="text-center mt-3 mb-2">
+                                    <i class="bi bi-tools fs-1 text-secondary"></i>
+                                </div>
+                                <div class="card-body p-1 text-center">
+                                    <p class="small fw-bold mb-1 text-truncate">${name}</p>
+                                    <p class="text-primary fw-bold mb-2">₹${price}</p>
+                                    <button class="btn-add" onclick="addToCart('${name}', '${price}')">Add</button>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+            });
+        } catch (err) {
+            document.getElementById('product-grid').innerHTML = "Error loading stock file. Make sure stock.csv is uploaded.";
+        }
+    }
+
+    function addToCart(name, price) {
+        cart.push({name, price});
+        document.getElementById('count').innerText = cart.length;
+        renderCart();
+    }
+
+    function renderCart() {
+        const div = document.getElementById('cart-items');
+        if (cart.length === 0) return;
+        let html = '<ul class="list-group small">';
+        cart.forEach(item => html += `<li class="list-group-item d-flex justify-content-between">${item.name} <span>₹${item.price}</span></li>`);
+        div.innerHTML = html + '</ul>';
+    }
+
+    function sendOrder() {
+        let text = "New Order from Website:%0A";
+        cart.forEach(i => text += `- ${i.name} (₹${i.price})%0A`);
+        window.open(`https://wa.me/919695781319?text=${text}`);
+    }
+
+    loadStock();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
